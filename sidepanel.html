@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Monitor</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 工具栏 -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button id="clearBtn" class="btn btn-clear" title="清空记录">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+          清空
+        </button>
+        <button id="mockListBtn" class="btn" title="查看Mock规则">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          Mock规则
+        </button>
+        <button id="addRuleBtn" class="btn btn-primary" title="添加匹配规则">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          添加规则
+        </button>
+        <button id="filterToggleBtn" class="btn btn-icon" title="过滤器">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+          </svg>
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <span id="requestCount" class="request-count">0 个请求</span>
+        <button id="settingsBtn" class="btn btn-icon" title="设置">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 过滤器面板 -->
+    <div id="filterPanel" class="filter-panel hidden">
+      <div class="filter-row">
+        <div class="filter-item filter-item-wide">
+          <label>URL过滤 <span class="filter-hint">支持通配符 * 和正则 /pattern/</span></label>
+          <input type="text" id="filterUrl" class="filter-input" placeholder="例如: */api/* 或 /users/\d+/">
+        </div>
+        <div class="filter-item">
+          <label>请求方法</label>
+          <select id="filterMethod" class="filter-select">
+            <option value="all">全部</option>
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+            <option value="PATCH">PATCH</option>
+            <option value="OPTIONS">OPTIONS</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-item">
+          <label>状态码</label>
+          <select id="filterStatus" class="filter-select">
+            <option value="all">全部</option>
+            <option value="success">成功 (2xx)</option>
+            <option value="redirect">重定向 (3xx)</option>
+            <option value="client-error">客户端错误 (4xx)</option>
+            <option value="server-error">服务器错误 (5xx)</option>
+            <option value="error">请求失败</option>
+            <option value="pending">等待中</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>请求类型</label>
+          <select id="filterType" class="filter-select">
+            <option value="all">全部</option>
+            <option value="fetch">Fetch</option>
+            <option value="xhr">XHR</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-item filter-item-wide">
+          <label>响应内容 <span class="filter-hint">支持通配符 * 和正则 /pattern/</span></label>
+          <input type="text" id="filterResponse" class="filter-input" placeholder="例如: *error* 或 /\"code\":\d+/">
+        </div>
+        <div class="filter-item">
+          <label>Mock状态</label>
+          <select id="filterMock" class="filter-select">
+            <option value="all">全部</option>
+            <option value="mocked">已Mock</option>
+            <option value="real">真实请求</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button id="clearFiltersBtn" class="btn btn-small">清除过滤</button>
+        <span id="filterResultCount" class="filter-result-count"></span>
+      </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+      <!-- 请求列表 -->
+      <div class="request-list-container">
+        <div class="list-header">
+          <span class="col-method">方法</span>
+          <span class="col-status">状态</span>
+          <span class="col-url">URL</span>
+          <span class="col-time">耗时</span>
+        </div>
+        <div id="requestList" class="request-list">
+          <div class="empty-state">
+            <div class="empty-icon">📡</div>
+            <div class="empty-text">等待请求...</div>
+            <div class="empty-hint">刷新页面开始监控API请求</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 请求详情 -->
+      <div id="detailPanel" class="detail-panel hidden">
+        <div class="detail-header">
+          <div class="detail-title">
+            <span id="detailMethod" class="method-badge">GET</span>
+            <span id="detailUrl" class="detail-url"></span>
+          </div>
+          <button id="closeDetail" class="btn-close" title="关闭详情">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="detail-tabs">
+          <button class="tab-btn active" data-tab="general">概要</button>
+          <button class="tab-btn" data-tab="request">请求</button>
+          <button class="tab-btn" data-tab="response">响应</button>
+        </div>
+        
+        <div class="detail-content">
+          <!-- 概要信息 -->
+          <div id="tabGeneral" class="tab-content active">
+            <div class="info-section">
+              <h4>基本信息</h4>
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">请求URL</span>
+                  <span id="infoUrl" class="info-value selectable"></span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">请求方法</span>
+                  <span id="infoMethod" class="info-value"></span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">状态码</span>
+                  <span id="infoStatus" class="info-value"></span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">请求类型</span>
+                  <span id="infoType" class="info-value"></span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">耗时</span>
+                  <span id="infoDuration" class="info-value"></span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">时间</span>
+                  <span id="infoTime" class="info-value"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 请求信息 -->
+          <div id="tabRequest" class="tab-content">
+            <div class="info-section">
+              <h4>请求头</h4>
+              <pre id="requestHeaders" class="code-block"></pre>
+            </div>
+            <div class="info-section">
+              <h4>请求体</h4>
+              <pre id="requestBody" class="code-block"></pre>
+            </div>
+          </div>
+          
+          <!-- 响应信息 -->
+          <div id="tabResponse" class="tab-content">
+            <div class="info-section">
+              <h4>响应头</h4>
+              <pre id="responseHeaders" class="code-block"></pre>
+            </div>
+            <div class="info-section">
+              <h4>响应体</h4>
+              <div class="response-toolbar">
+                <button id="copyResponseBtn" class="btn btn-small">复制</button>
+                <button id="formatJsonBtn" class="btn btn-small">格式化</button>
+                <button id="editResponseBtn" class="btn btn-small btn-primary">编辑Mock</button>
+              </div>
+              <pre id="responseBody" class="code-block response-body"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mock规则列表面板 -->
+      <div id="mockListPanel" class="mock-list-panel hidden">
+        <div class="detail-header">
+          <div class="detail-title">
+            <span class="panel-title">Mock规则列表</span>
+          </div>
+          <div class="header-actions">
+            <button id="importRulesBtn" class="btn btn-small" title="导入规则">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              导入
+            </button>
+            <button id="exportRulesBtn" class="btn btn-small" title="导出规则">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              导出
+            </button>
+            <button id="closeMockList" class="btn-close" title="关闭">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div id="mockRulesList" class="mock-rules-list">
+          <div class="empty-state">
+            <div class="empty-text">暂无Mock规则</div>
+            <div class="empty-hint">点击"添加规则"或选择请求后点击"编辑Mock"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mock编辑弹窗 -->
+  <div id="mockModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h3 id="mockModalTitle">编辑Mock响应</h3>
+        <button id="closeMockModal" class="btn-close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>规则名称</label>
+          <input type="text" id="mockName" class="form-input" placeholder="例如：用户列表Mock">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>匹配方式</label>
+            <select id="mockMatchType" class="form-input">
+              <option value="exact">精确匹配</option>
+              <option value="contains">包含匹配</option>
+              <option value="startsWith">前缀匹配</option>
+              <option value="endsWith">后缀匹配</option>
+              <option value="wildcard">通配符 (*)</option>
+              <option value="regex">正则表达式</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>请求方法</label>
+            <select id="mockMethod" class="form-input">
+              <option value="*">全部方法</option>
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+              <option value="PUT">PUT</option>
+              <option value="DELETE">DELETE</option>
+              <option value="PATCH">PATCH</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>URL匹配规则 <span id="matchTypeHint" class="hint-text"></span></label>
+          <input type="text" id="mockUrl" class="form-input" placeholder="输入URL或匹配规则">
+          <div id="urlMatchPreview" class="match-preview hidden">
+            <span class="preview-label">匹配测试:</span>
+            <span id="urlMatchResult" class="preview-result"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>状态码</label>
+            <input type="number" id="mockStatus" class="form-input" value="200">
+          </div>
+          <div class="form-group">
+            <label>延迟(ms)</label>
+            <input type="number" id="mockDelay" class="form-input" value="0" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>响应内容</label>
+          <textarea id="mockResponseBody" class="form-textarea" rows="10" placeholder="输入JSON或文本响应"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="mockEnabled" checked>
+            <span>启用此Mock规则</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="deleteMockBtn" class="btn btn-danger">删除规则</button>
+        <div class="footer-right">
+          <button id="testMockBtn" class="btn">测试匹配</button>
+          <button id="saveMockBtn" class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content modal-small">
+      <div class="modal-header">
+        <h3>设置</h3>
+        <button id="closeSettingsModal" class="btn-close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>默认打开方式</label>
+          <div class="settings-mode-options">
+            <label class="settings-mode-option">
+              <input type="radio" name="settingsDisplayMode" value="sidepanel">
+              <div class="mode-option-content">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="9" y1="3" x2="9" y2="21"></line>
+                </svg>
+                <span>侧边栏</span>
+                <small>在浏览器侧边栏中打开</small>
+              </div>
+            </label>
+            <label class="settings-mode-option">
+              <input type="radio" name="settingsDisplayMode" value="floating">
+              <div class="mode-option-content">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <rect x="8" y="8" width="13" height="13" rx="2" ry="2"></rect>
+                </svg>
+                <span>悬浮窗口</span>
+                <small>在页面右下角悬浮显示</small>
+              </div>
+            </label>
+            <label class="settings-mode-option">
+              <input type="radio" name="settingsDisplayMode" value="popup">
+              <div class="mode-option-content">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                </svg>
+                <span>弹出窗口</span>
+                <small>点击图标显示小窗口</small>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>快捷操作</label>
+          <div class="quick-actions">
+            <button id="openFloatingPanel" class="btn btn-block">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              </svg>
+              在当前页面悬浮窗口打开
+            </button>
+            <button id="openInNewTab" class="btn btn-block">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+              在新标签页中打开
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span class="version-info">API Monitor v1.0.0</span>
+        <button id="saveSettingsBtn" class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导入弹窗 -->
+  <div id="importModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content modal-small">
+      <div class="modal-header">
+        <h3>导入Mock规则</h3>
+        <button id="closeImportModal" class="btn-close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>选择JSON文件</label>
+          <div class="file-input-wrapper">
+            <input type="file" id="importFileInput" accept=".json" class="file-input">
+            <div class="file-input-display">
+              <span id="selectedFileName">未选择文件</span>
+              <button type="button" class="btn btn-small">选择文件</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>导入方式</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="importMode" value="merge" checked>
+              <span>合并（保留现有规则，相同ID覆盖）</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="importMode" value="replace">
+              <span>替换（删除所有现有规则）</span>
+            </label>
+          </div>
+        </div>
+        <div id="importPreview" class="import-preview hidden">
+          <div class="preview-header">文件预览</div>
+          <div id="importPreviewContent" class="preview-content"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div></div>
+        <button id="confirmImportBtn" class="btn btn-primary" disabled>导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- URL测试弹窗 -->
+  <div id="testModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content modal-small">
+      <div class="modal-header">
+        <h3>测试URL匹配</h3>
+        <button id="closeTestModal" class="btn-close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>输入测试URL</label>
+          <input type="text" id="testUrl" class="form-input" placeholder="https://example.com/api/users">
+        </div>
+        <div id="testResult" class="test-result hidden">
+          <div class="test-result-icon"></div>
+          <div class="test-result-text"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="runTestBtn" class="btn btn-primary">测试</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="sidepanel.js"></script>
+</body>
+</html>
